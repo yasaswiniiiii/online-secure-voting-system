@@ -3,13 +3,25 @@ info:
   # Do not change the title, if the title changes, the import paths will be broken
   title: Api
   version: 0.1.0
-  description: API specification
+  description: SecureVote API specification
 servers:
   - url: /api
     description: Base API path
 tags:
   - name: health
     description: Health operations
+  - name: auth
+    description: Authentication operations
+  - name: candidates
+    description: Candidate operations
+  - name: votes
+    description: Voting operations
+  - name: elections
+    description: Election operations
+  - name: admin
+    description: Admin operations
+  - name: results
+    description: Results operations
 paths:
   /healthz:
     get:
@@ -24,7 +36,505 @@ paths:
             application/json:
               schema:
                 $ref: "#/components/schemas/HealthStatus"
+
+  /auth/register:
+    post:
+      operationId: registerVoter
+      tags: [auth]
+      summary: Register a new voter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VoterRegistration"
+      responses:
+        "201":
+          description: Voter registered
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "409":
+          description: Voter ID or email already exists
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/login:
+    post:
+      operationId: loginVoter
+      tags: [auth]
+      summary: Login as voter
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VoterLogin"
+      responses:
+        "200":
+          description: Login successful - OTP sent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/LoginResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/verify-otp:
+    post:
+      operationId: verifyOtp
+      tags: [auth]
+      summary: Verify OTP and get JWT token
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/OtpVerification"
+      responses:
+        "200":
+          description: OTP verified, token returned
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "400":
+          description: Invalid or expired OTP
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/resend-otp:
+    post:
+      operationId: resendOtp
+      tags: [auth]
+      summary: Resend OTP
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ResendOtp"
+      responses:
+        "200":
+          description: OTP resent
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/MessageResponse"
+        "400":
+          description: Error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /auth/me:
+    get:
+      operationId: getMe
+      tags: [auth]
+      summary: Get current voter profile
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Voter profile
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Voter"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /admin/login:
+    post:
+      operationId: loginAdmin
+      tags: [admin]
+      summary: Admin login
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/AdminLogin"
+      responses:
+        "200":
+          description: Admin login successful
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AuthResponse"
+        "401":
+          description: Invalid credentials
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /elections:
+    get:
+      operationId: listElections
+      tags: [elections]
+      summary: List all elections
+      responses:
+        "200":
+          description: List of elections
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Election"
+    post:
+      operationId: createElection
+      tags: [elections]
+      summary: Create a new election (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ElectionInput"
+      responses:
+        "201":
+          description: Election created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Election"
+        "400":
+          description: Validation error
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /elections/active:
+    get:
+      operationId: getActiveElection
+      tags: [elections]
+      summary: Get the currently active election
+      responses:
+        "200":
+          description: Active election details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Election"
+        "404":
+          description: No active election
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /elections/{id}:
+    get:
+      operationId: getElection
+      tags: [elections]
+      summary: Get a specific election
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Election details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Election"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateElection
+      tags: [elections]
+      summary: Update an election (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/ElectionUpdate"
+      responses:
+        "200":
+          description: Election updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Election"
+    delete:
+      operationId: deleteElection
+      tags: [elections]
+      summary: Delete an election (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /candidates:
+    get:
+      operationId: listCandidates
+      tags: [candidates]
+      summary: List all candidates for active election
+      responses:
+        "200":
+          description: List of candidates
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/Candidate"
+    post:
+      operationId: createCandidate
+      tags: [candidates]
+      summary: Create a candidate (admin only)
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CandidateInput"
+      responses:
+        "201":
+          description: Candidate created
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Candidate"
+
+  /candidates/{id}:
+    get:
+      operationId: getCandidate
+      tags: [candidates]
+      summary: Get a specific candidate
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "200":
+          description: Candidate details
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Candidate"
+        "404":
+          description: Not found
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+    patch:
+      operationId: updateCandidate
+      tags: [candidates]
+      summary: Update a candidate (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/CandidateUpdate"
+      responses:
+        "200":
+          description: Candidate updated
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/Candidate"
+    delete:
+      operationId: deleteCandidate
+      tags: [candidates]
+      summary: Delete a candidate (admin only)
+      security:
+        - bearerAuth: []
+      parameters:
+        - name: id
+          in: path
+          required: true
+          schema:
+            type: integer
+      responses:
+        "204":
+          description: Deleted
+
+  /votes:
+    post:
+      operationId: castVote
+      tags: [votes]
+      summary: Cast a vote
+      security:
+        - bearerAuth: []
+      requestBody:
+        required: true
+        content:
+          application/json:
+            schema:
+              $ref: "#/components/schemas/VoteInput"
+      responses:
+        "201":
+          description: Vote cast successfully
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoteRecord"
+        "400":
+          description: Validation error or already voted
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /votes/status:
+    get:
+      operationId: getVoteStatus
+      tags: [votes]
+      summary: Check if current voter has voted
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Vote status
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/VoteStatus"
+        "401":
+          description: Unauthorized
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ErrorResponse"
+
+  /results:
+    get:
+      operationId: getResults
+      tags: [results]
+      summary: Get election results
+      responses:
+        "200":
+          description: Election results with vote counts
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/ElectionResults"
+
+  /admin/voters:
+    get:
+      operationId: listVoters
+      tags: [admin]
+      summary: List all registered voters (admin only)
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: List of voters
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/VoterSummary"
+
+  /admin/stats:
+    get:
+      operationId: getAdminStats
+      tags: [admin]
+      summary: Get admin dashboard statistics
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Dashboard statistics
+          content:
+            application/json:
+              schema:
+                $ref: "#/components/schemas/AdminStats"
+
+  /admin/activity:
+    get:
+      operationId: getActivityLog
+      tags: [admin]
+      summary: Get activity logs
+      security:
+        - bearerAuth: []
+      responses:
+        "200":
+          description: Activity log entries
+          content:
+            application/json:
+              schema:
+                type: array
+                items:
+                  $ref: "#/components/schemas/ActivityLog"
+
 components:
+  securitySchemes:
+    bearerAuth:
+      type: http
+      scheme: bearer
+      bearerFormat: JWT
+
   schemas:
     HealthStatus:
       type: object
@@ -34,3 +544,335 @@ components:
       required:
         - status
 
+    ErrorResponse:
+      type: object
+      properties:
+        error:
+          type: string
+      required:
+        - error
+
+    MessageResponse:
+      type: object
+      properties:
+        message:
+          type: string
+      required:
+        - message
+
+    VoterRegistration:
+      type: object
+      required: [fullName, voterId, email, mobile, password]
+      properties:
+        fullName:
+          type: string
+          minLength: 2
+        voterId:
+          type: string
+          minLength: 4
+        email:
+          type: string
+          format: email
+        mobile:
+          type: string
+        password:
+          type: string
+          minLength: 8
+
+    VoterLogin:
+      type: object
+      required: [identifier, password]
+      properties:
+        identifier:
+          type: string
+          description: Voter ID or email
+        password:
+          type: string
+        rememberMe:
+          type: boolean
+
+    OtpVerification:
+      type: object
+      required: [voterId, otp]
+      properties:
+        voterId:
+          type: string
+        otp:
+          type: string
+
+    ResendOtp:
+      type: object
+      required: [voterId]
+      properties:
+        voterId:
+          type: string
+
+    AdminLogin:
+      type: object
+      required: [username, password]
+      properties:
+        username:
+          type: string
+        password:
+          type: string
+
+    AuthResponse:
+      type: object
+      required: [token, user]
+      properties:
+        token:
+          type: string
+        user:
+          $ref: "#/components/schemas/Voter"
+
+    LoginResponse:
+      type: object
+      required: [message, voterId]
+      properties:
+        message:
+          type: string
+        voterId:
+          type: string
+
+    Voter:
+      type: object
+      required: [id, fullName, voterId, email, mobile, hasVoted, role]
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        voterId:
+          type: string
+        email:
+          type: string
+        mobile:
+          type: string
+        hasVoted:
+          type: boolean
+        role:
+          type: string
+          enum: [voter, admin]
+
+    VoterSummary:
+      type: object
+      required: [id, fullName, voterId, email, mobile, hasVoted, createdAt]
+      properties:
+        id:
+          type: integer
+        fullName:
+          type: string
+        voterId:
+          type: string
+        email:
+          type: string
+        mobile:
+          type: string
+        hasVoted:
+          type: boolean
+        createdAt:
+          type: string
+
+    Election:
+      type: object
+      required: [id, title, description, startDate, endDate, status]
+      properties:
+        id:
+          type: integer
+        title:
+          type: string
+        description:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: string
+        status:
+          type: string
+          enum: [upcoming, active, ended]
+        createdAt:
+          type: string
+
+    ElectionInput:
+      type: object
+      required: [title, description, startDate, endDate]
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: string
+        status:
+          type: string
+
+    ElectionUpdate:
+      type: object
+      properties:
+        title:
+          type: string
+        description:
+          type: string
+        startDate:
+          type: string
+        endDate:
+          type: string
+        status:
+          type: string
+
+    Candidate:
+      type: object
+      required: [id, name, party, symbol, description, imageUrl, electionId]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        party:
+          type: string
+        symbol:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+        electionId:
+          type: integer
+
+    CandidateInput:
+      type: object
+      required: [name, party, symbol, description, electionId]
+      properties:
+        name:
+          type: string
+        party:
+          type: string
+        symbol:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+        electionId:
+          type: integer
+
+    CandidateUpdate:
+      type: object
+      properties:
+        name:
+          type: string
+        party:
+          type: string
+        symbol:
+          type: string
+        description:
+          type: string
+        imageUrl:
+          type: string
+
+    VoteInput:
+      type: object
+      required: [candidateId, electionId]
+      properties:
+        candidateId:
+          type: integer
+        electionId:
+          type: integer
+
+    VoteRecord:
+      type: object
+      required: [id, voterId, candidateId, electionId, timestamp]
+      properties:
+        id:
+          type: integer
+        voterId:
+          type: integer
+        candidateId:
+          type: integer
+        electionId:
+          type: integer
+        timestamp:
+          type: string
+
+    VoteStatus:
+      type: object
+      required: [hasVoted]
+      properties:
+        hasVoted:
+          type: boolean
+        candidateId:
+          type: ["integer", "null"]
+        candidateName:
+          type: ["string", "null"]
+        timestamp:
+          type: ["string", "null"]
+
+    CandidateResult:
+      type: object
+      required: [id, name, party, symbol, imageUrl, voteCount, percentage]
+      properties:
+        id:
+          type: integer
+        name:
+          type: string
+        party:
+          type: string
+        symbol:
+          type: string
+        imageUrl:
+          type: string
+        voteCount:
+          type: integer
+        percentage:
+          type: number
+
+    ElectionResults:
+      type: object
+      required: [election, candidates, totalVotes, winner]
+      properties:
+        election:
+          $ref: "#/components/schemas/Election"
+        candidates:
+          type: array
+          items:
+            $ref: "#/components/schemas/CandidateResult"
+        totalVotes:
+          type: integer
+        winner:
+          $ref: "#/components/schemas/CandidateResult"
+
+    AdminStats:
+      type: object
+      required: [totalVoters, totalVoted, totalCandidates, totalElections, votingPercentage, activeElection]
+      properties:
+        totalVoters:
+          type: integer
+        totalVoted:
+          type: integer
+        totalCandidates:
+          type: integer
+        totalElections:
+          type: integer
+        votingPercentage:
+          type: number
+        activeElection:
+          type: ["string", "null"]
+
+    ActivityLog:
+      type: object
+      required: [id, action, description, timestamp, userId]
+      properties:
+        id:
+          type: integer
+        action:
+          type: string
+        description:
+          type: string
+        timestamp:
+          type: string
+        userId:
+          type: ["integer", "null"]
+        userType:
+          type: string

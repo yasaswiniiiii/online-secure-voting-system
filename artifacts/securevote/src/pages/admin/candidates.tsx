@@ -1,7 +1,7 @@
 import { useEffect, useState } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { useListCandidates, useCreateCandidate, useUpdateCandidate, useDeleteCandidate, useListElections, getListCandidatesQueryKey } from "@workspace/api-client-react";
+import { useListCandidates, useCreateCandidate, useUpdateCandidate, useDeleteCandidate, useListElections, getListCandidatesQueryKey, getListElectionsQueryKey } from "@workspace/api-client-react";
 import { useQueryClient } from "@tanstack/react-query";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -27,7 +27,7 @@ export default function AdminCandidatesPage() {
   }, [isAuthenticated, isAdmin, authLoading, setLocation]);
 
   const { data: candidates, isLoading } = useListCandidates({ query: { enabled: isAuthenticated && isAdmin, queryKey: getListCandidatesQueryKey() } });
-  const { data: elections } = useListElections({ query: { enabled: isAuthenticated && isAdmin } });
+  const { data: elections } = useListElections({ query: { enabled: isAuthenticated && isAdmin, queryKey: getListElectionsQueryKey() } });
   const createMutation = useCreateCandidate();
   const updateMutation = useUpdateCandidate();
   const deleteMutation = useDeleteCandidate();

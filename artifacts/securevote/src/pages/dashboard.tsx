@@ -1,6 +1,6 @@
 import { useLocation, Link } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { useGetActiveElection, useGetVoteStatus, useListCandidates, getGetVoteStatusQueryKey, getGetActiveElectionQueryKey } from "@workspace/api-client-react";
+import { useGetActiveElection, useGetVoteStatus, useListCandidates, getGetVoteStatusQueryKey, getGetActiveElectionQueryKey, getListCandidatesQueryKey } from "@workspace/api-client-react";
 import { Button } from "@/components/ui/button";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
@@ -46,7 +46,7 @@ export default function DashboardPage() {
     query: { enabled: isAuthenticated, queryKey: getGetVoteStatusQueryKey() },
   });
 
-  const { data: candidates } = useListCandidates({ query: { enabled: isAuthenticated } });
+  const { data: candidates } = useListCandidates({ query: { enabled: isAuthenticated, queryKey: getListCandidatesQueryKey() } });
 
   if (authLoading) {
     return (

@@ -21,7 +21,7 @@ export default function AdminVotersPage() {
   });
 
   const totalVoted = voters?.filter((v) => v.hasVoted).length ?? 0;
-  const totalVoters = voters?.filter((v) => v.role !== "admin").length ?? 0;
+  const totalVoters = voters?.filter((v) => v.voterId !== "admin").length ?? 0;
 
   return (
     <div className="max-w-6xl mx-auto px-4 sm:px-6 py-10">
@@ -71,7 +71,7 @@ export default function AdminVotersPage() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {(voters ?? []).filter((v) => v.role !== "admin").map((voter) => (
+                  {(voters ?? []).filter((v) => v.voterId !== "admin").map((voter) => (
                     <TableRow key={voter.id} data-testid={`row-voter-${voter.id}`}>
                       <TableCell className="font-mono text-sm font-medium">{voter.voterId}</TableCell>
                       <TableCell className="font-medium">{voter.fullName}</TableCell>

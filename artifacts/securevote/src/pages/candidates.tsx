@@ -1,7 +1,7 @@
 import { useState, useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { useListCandidates, useGetVoteStatus, getGetVoteStatusQueryKey } from "@workspace/api-client-react";
+import { useListCandidates, useGetVoteStatus, getGetVoteStatusQueryKey, getListCandidatesQueryKey } from "@workspace/api-client-react";
 import { setSelectedCandidate } from "@/hooks/useVote";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
@@ -21,7 +21,7 @@ export default function CandidatesPage() {
     if (!authLoading && !isAuthenticated) setLocation("/login");
   }, [isAuthenticated, authLoading, setLocation]);
 
-  const { data: candidates, isLoading } = useListCandidates({ query: { enabled: isAuthenticated } });
+  const { data: candidates, isLoading } = useListCandidates({ query: { enabled: isAuthenticated, queryKey: getListCandidatesQueryKey() } });
   const { data: voteStatus } = useGetVoteStatus({ query: { enabled: isAuthenticated, queryKey: getGetVoteStatusQueryKey() } });
 
   const filtered = candidates?.filter((c) =>

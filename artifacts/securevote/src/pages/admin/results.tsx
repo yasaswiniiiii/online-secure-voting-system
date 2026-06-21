@@ -1,7 +1,7 @@
 import { useEffect } from "react";
 import { useLocation } from "wouter";
 import { useAuth } from "@/hooks/useAuth";
-import { useGetResults } from "@workspace/api-client-react";
+import { useGetResults, getGetResultsQueryKey } from "@workspace/api-client-react";
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
 import { Skeleton } from "@/components/ui/skeleton";
 import { Badge } from "@/components/ui/badge";
@@ -19,7 +19,7 @@ export default function AdminResultsPage() {
     if (!authLoading && (!isAuthenticated || !isAdmin)) setLocation("/admin/login");
   }, [isAuthenticated, isAdmin, authLoading, setLocation]);
 
-  const { data, isLoading } = useGetResults({ query: { enabled: isAuthenticated && isAdmin } });
+  const { data, isLoading } = useGetResults({ query: { enabled: isAuthenticated && isAdmin, queryKey: getGetResultsQueryKey() } });
 
   if (isLoading) {
     return (
